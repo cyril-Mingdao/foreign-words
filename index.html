@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台語外來詞大挑戰</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://tauhu.tw/tauhu-oo.css" rel="stylesheet">
+<style>
+:root {
+  --primary: #111111;
+  --primary-light: #fff6d6;
+  --accent: #ffcc00;
+  --bg: #ffffff;
+  --text: #111111;
+  --card-bg: #ffffff;
+  --correct: #1b7a34;
+  --correct-bg: #e6f4ea;
+  --wrong: #c62828;
+  --wrong-bg: #fdeaea;
+  --border: #111111;
+  --border-soft: #d8d8d8;
+}
+* { box-sizing: border-box; font-family: tauhu-oo, 'Noto Sans TC', sans-serif; }
+html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); }
+.app { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; }
+
+.hero-banner {
+  width: 100%;
+  background: var(--primary);
+  color: var(--accent); padding: 16px 20px; text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  border-bottom: 6px solid var(--accent);
+  line-height: 0;
+}
+.hero-banner.hidden { display: none; }
+.hero-banner h1 { margin: 0; font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+.hero-banner .subtitle { margin-top: 8px; font-size: 1rem; color: #ffffff; line-height: 1; }
+
+.screen { width: 100%; max-width: 640px; padding: 30px 20px 60px; }
+.screen.hidden { display: none; }
+
+.count-label { font-weight: 800; color: var(--primary); margin-bottom: 12px; text-align: center; font-size: 1.05rem; }
+.count-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 26px; }
+.count-btn {
+  background: white; border: 2px solid var(--primary); border-radius: 14px;
+  padding: 18px 10px; text-align: center; font-weight: 800; font-size: 1.1rem;
+  color: var(--primary); cursor: pointer; transition: all .15s ease;
+}
+.count-btn:hover { border-color: var(--accent); background: var(--primary-light); }
+.count-btn.selected { background: var(--primary); color: var(--accent); border-color: var(--primary); transform: scale(1.03); }
+.count-btn .count-sub { display: block; font-size: 0.72rem; font-weight: 500; margin-top: 4px; opacity: 0.8; }
+
+.start-btn {
+  display: block; width: 100%; background: var(--accent); color: var(--primary); border: 2px solid var(--primary);
+  padding: 16px; border-radius: 28px; font-weight: 900; font-size: 1.15rem; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2); transition: opacity .15s ease, transform .15s ease;
+}
+.start-btn:disabled { background: #eeeeee; color: #999; border-color: var(--border-soft); box-shadow: none; cursor: not-allowed; opacity: 0.8; }
+.start-btn:not(:disabled):hover { transform: translateY(-1px); }
+
+.last-score {
+  text-align: center; margin-top: 22px; padding: 12px 16px; border-radius: 12px;
+  background: var(--primary-light); color: var(--primary); font-weight: 800; display: none;
+  border: 2px solid var(--accent);
+}
+.last-score.show { display: block; }
+
+.rules-box { margin-top: 30px; background: white; border: 2px solid var(--primary); border-radius: 12px; padding: 16px 18px; font-size: 0.85rem; color: #333; }
+.rules-box li { margin-bottom: 6px; }
+
+/* --- 遊戲畫面 --- */
+.progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; font-weight: 800; color: var(--primary); }
+.progress-bar-track { background: #eeeeee; border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 26px; border: 1px solid var(--primary); }
+.progress-bar-fill { background: var(--accent); height: 100%; width: 0%; transition: width .3s ease; }
+
+.question-card { background: white; border: 2px solid var(--primary); border-radius: 16px; padding: 26px 22px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+.qa-left, .qa-right { min-width: 0; }
+.tailo-word {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 2rem; font-weight: 900; color: var(--primary);
+  padding: 6px 18px; border-radius: 14px; background: var(--primary-light);
+  margin-bottom: 26px; border: 2px solid var(--accent);
+}
+.tailo-word:hover { background: var(--accent); }
+.tailo-word .spk { font-size: 1.4rem; }
+
+.opt-list { display: flex; flex-direction: column; gap: 12px; }
+@media (orientation: portrait) {
+  .opt-list { display: flex; flex-direction: column; gap: 12px; }
+}
+.opt-btn {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: white; border: 2px solid var(--primary); border-radius: 12px;
+  padding: 14px 16px; font-size: 1rem; cursor: pointer; color: var(--text);
+}
+.opt-btn:hover:not(:disabled) { background: var(--primary-light); border-color: var(--accent); }
+.opt-letter {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--primary);
+  color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 900;
+}
+.opt-btn.correct { background: var(--correct-bg); border-color: var(--correct); }
+.opt-btn.correct .opt-letter { background: var(--correct); color: white; }
+.opt-btn.wrong { background: var(--wrong-bg); border-color: var(--wrong); }
+.opt-btn.wrong .opt-letter { background: var(--wrong); color: white; }
+.opt-btn:disabled { cursor: default; }
+
+.feedback-banner {
+  margin-top: 18px; text-align: center; font-weight: 900; font-size: 1.1rem; min-height: 28px;
+}
+.explain-box {
+  display: none; margin-top: 10px; text-align: left; background: var(--primary-light);
+  border: 2px solid var(--accent); border-radius: 10px; padding: 12px 16px; font-size: 0.9rem; color: #333;
+}
+.explain-box.show { display: block; }
+.explain-box .explain-title { font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+
+.nav-row { display: flex; gap: 12px; margin-top: 22px; }
+.nav-btn {
+  flex: 1 1 0; background: white; color: var(--primary); border: 2px solid var(--primary);
+  padding: 13px; border-radius: 24px; font-weight: 800; font-size: 1rem; cursor: pointer;
+}
+.nav-btn:hover:not(:disabled) { background: var(--primary-light); }
+.nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.nav-btn.primary { background: var(--primary); color: var(--accent); }
+.nav-btn.primary:hover:not(:disabled) { background: #000; }
+
+/* 橫式螢幕：左（詞卡＋選項）右（對錯提示＋釋義）雙欄配置。
+   寬度盡量撐滿畫面（減少四周留白），字體與間距改用 clamp() 依螢幕可視範圍（vh／vw）
+   等比例縮放——螢幕越大物件跟字就越大，螢幕越窄矮就自動縮小，確保不需捲動。
+   此區塊放在樣式表最後，確保能覆蓋掉前面同層級選擇器的預設值。 */
+@media (orientation: landscape) {
+  .app { justify-content: center; }
+  .screen { max-width: min(96vw, 1600px); padding: clamp(3px, 1vh, 12px) clamp(12px, 2vw, 30px) clamp(4px, 1vh, 12px); }
+  .progress-row { margin-bottom: clamp(2px, 0.6vh, 8px); font-size: clamp(1.6rem, 4.8vh, 2.3rem); }
+  .progress-bar-track { margin-bottom: clamp(4px, 1vh, 12px); height: clamp(5px, 1vh, 10px); }
+
+  .question-card {
+    padding: clamp(8px, 1.8vh, 24px) clamp(18px, 3vw, 44px) clamp(6px, 1.4vh, 16px);
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    grid-template-areas: "left right" "nav nav";
+    column-gap: clamp(20px, 3.5vw, 56px);
+    row-gap: clamp(3px, 1vh, 10px);
+    align-items: start;
+  }
+  .qa-left { grid-area: left; text-align: center; }
+  .qa-right { grid-area: right; text-align: left; display: flex; flex-direction: column; justify-content: center; min-height: 100%; }
+  .nav-row { grid-area: nav; margin-top: clamp(3px, 0.8vh, 10px); gap: clamp(10px, 1.6vw, 20px); }
+
+  /* 所有文字放大一倍：font-size 的 clamp 上下限與 vh 係數皆為原本的 2 倍；
+     其餘留白／間距則進一步壓縮，換取字體加倍後仍可完整顯示、不需捲動的空間。 */
+  .tailo-word {
+    font-size: clamp(3rem, 11vh, 5.6rem);
+    padding: clamp(3px, 1vh, 12px) clamp(18px, 2.8vw, 38px);
+    margin-bottom: clamp(5px, 1.4vh, 16px);
+  }
+  .tailo-word .spk { font-size: clamp(2.2rem, 6.4vh, 3.4rem); }
+
+  .opt-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(5px, 1.2vh, 14px); }
+  .opt-btn { padding: clamp(5px, 1.4vh, 16px) clamp(12px, 1.6vw, 24px); font-size: clamp(1.7rem, 4.2vh, 2.4rem); gap: clamp(10px, 1.4vw, 18px); }
+  .opt-letter { width: clamp(36px, 7vh, 66px); height: clamp(36px, 7vh, 66px); font-size: clamp(1.5rem, 3.4vh, 2rem); }
+
+  .feedback-banner { margin-top: 0; font-size: clamp(1.9rem, 5vh, 2.8rem); min-height: auto; text-align: left; }
+  .explain-box { margin-top: clamp(2px, 0.8vh, 10px); padding: clamp(5px, 1.2vh, 14px) clamp(12px, 1.6vw, 22px); font-size: clamp(1.4rem, 3.6vh, 2.1rem); }
+  .explain-box .explain-title { font-size: clamp(1.6rem, 4vh, 2.2rem); margin-bottom: clamp(1px, 0.4vh, 5px); }
+
+  .nav-btn { padding: clamp(5px, 1.2vh, 16px); font-size: clamp(1.76rem, 4vh, 2.3rem); }
+}
+
+@media (orientation: landscape) and (max-height: 460px) {
+  .explain-box { max-height: 30vh; overflow-y: auto; }
+}
+
+/* 直式螢幕：遊戲頁面內物件間距整體縮小，把空間留給題卡本身。
+   只作用在遊戲頁面（#screen-game），不影響入口頁的版面。 */
+@media (orientation: portrait) {
+  #screen-game { padding: 14px 16px 20px; }
+  #screen-game .progress-row { margin-bottom: 8px; }
+  #screen-game .progress-bar-track { margin-bottom: 12px; }
+  #screen-game .question-card { padding: 16px 16px; display: flex; flex-direction: column; }
+  #screen-game .tailo-word { margin-bottom: 14px; }
+  #screen-game .opt-list { gap: 8px; }
+  /* 「上一題」「下一題」移到「選項」與「對錯提示／釋義」之間 */
+  #screen-game .nav-row { order: 2; margin: 14px 0; gap: 10px; }
+  #screen-game .qa-right { order: 3; }
+  #screen-game .feedback-banner { margin-top: 0; min-height: 20px; }
+  #screen-game .explain-box { margin-top: 6px; padding: 10px 14px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hero-banner" id="hero-banner">
+    <h1>台語外來詞大挑戰</h1>
+    <div class="subtitle">臺中明道中學 詹宗龍 製作</div>
+  </div>
+
+  <div class="screen" id="screen-entry">
+    <div class="count-label">請選擇題數</div>
+    <div class="count-grid" id="count-grid"></div>
+    <button class="start-btn" id="start-btn" disabled onclick="startChallenge()">開始挑戰</button>
+    <div class="last-score" id="last-score"></div>
+    <div class="rules-box">
+      <ul>
+        <li>🎲 題目會隨機出現，全部題號輪過一輪之後才會再重複。</li>
+        <li>🔊 點擊題目中央的臺羅字詞，可以聽官方讀音。</li>
+        <li>✅ 答對會有正確音效，並顯示釋義說明；❌ 答錯會有錯誤音效，可以繼續作答。</li>
+        <li>⬅️➡️ 「上一題」「下一題」按鈕隨時可以使用，自由切換題目。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="screen-game">
+    <div class="progress-row">
+      <span id="progress-text">第 1 / 5 題</span>
+      <span id="score-text">答對 0 題</span>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div class="question-card">
+      <div class="qa-left">
+        <div class="tailo-word" id="tailo-word" onclick="playCurrentAudio()">
+          <span id="tailo-text"></span><span class="spk">🔊</span>
+        </div>
+        <div class="opt-list" id="opt-list"></div>
+      </div>
+      <div class="qa-right">
+        <div class="feedback-banner" id="feedback-banner"></div>
+        <div class="explain-box" id="explain-box">
+          <div class="explain-title">📖 釋義</div>
+          <div id="explain-text"></div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="nav-btn" id="prev-btn" onclick="prevQuestion()">⬅️ 上一題</button>
+        <button class="nav-btn primary" id="next-btn" onclick="nextQuestion()">下一題 ➡️</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="sfx-correct" src="data:audio/wav;base64,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" preload="auto"></audio>
+<audio id="sfx-wrong" src="data:audio/wav;base64,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" preload="auto"></audio>
+
+<script>
+const QUESTIONS = [{"id": 1, "term": "a-lú-mih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/VJ/ke/203641.mp3", "opts": ["彈珠汽水", "倒車", "鋁、輕銀", "桌球、乒乓球"], "ans": 2, "explain": "鋁、輕銀。借自日語「アルミ(arumi)」。"}, {"id": 2, "term": "a-móo-ní-á", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/1Y/v8/203651.mp3", "opts": ["阿摩尼亞", "布魯司", "倒車", "小船"], "ans": 0, "explain": "阿摩尼亞。借自日語「アンモニア(anmonia)」。"}, {"id": 3, "term": "a-ní-khih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/dA/rN/203661.mp3", "opts": ["維他命、維生素", "老兄", "大姐", "腦筋不正常"], "ans": 1, "explain": "老兄。借自日語「兄貴（あにき）(aniki)」。"}, {"id": 4, "term": "a-sír-phí-lín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ij/y5/203671.mp3", "opts": ["高爾夫球", "阿斯匹林", "馬拉松", "賄賂、回扣"], "ans": 1, "explain": "阿斯匹林。借自日語「アスピリン(asupirin)」。"}, {"id": 5, "term": "á-geh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/LW/BC/203681.mp3", "opts": ["阿給、油豆腐", "章魚", "老兄", "郵票"], "ans": 0, "explain": "阿給、油豆腐。借自日語「揚げ（あげ）(age)」。"}, {"id": 6, "term": "a̋i-sat-tsuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/SS/oV/203691.mp3", "opts": ["打招呼、問候", "板手", "幫浦、手動抽水機", "大衣"], "ans": 0, "explain": "打招呼、問候。借自日語「挨拶（あいさつ）(aisatsu)」。"}, {"id": 7, "term": "a̋i-sīr-khu-lìn-mù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/XM/z9/203701.mp3", "opts": ["胸罩", "冰淇淋", "速可達、50cc輕型機車", "柏青哥"], "ans": 1, "explain": "冰淇淋。借自日語「アイスクリーム(aisukuriimu)」。"}, {"id": 8, "term": "àn-nāi", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/gY/Ej/203711.mp3", "opts": ["檜木", "招待、引導", "鋁、輕銀", "付款、算帳、結帳"], "ans": 1, "explain": "招待、引導。借自日語「案內（あんない）(annai)」。"}, {"id": 9, "term": "a̍t-sá-lih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/lk/8E/203721.mp3", "opts": ["綁腿", "奶油", "皮包、文件箱、手提包", "乾脆、阿莎力"], "ans": 3, "explain": "乾脆、阿莎力。借自日語「あっさり(assari)」。"}, {"id": 10, "term": "àu-tsuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/in/4W/203731.mp3", "opts": ["賄賂、回扣", "奶油", "螺旋槳", "出局"], "ans": 3, "explain": "出局。借自日語「アウト(auto)」。"}, {"id": 11, "term": "bá-luh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/qC/H1/203741.mp3", "opts": ["預備", "公里", "拔釘子的器具", "圍裙"], "ans": 2, "explain": "拔釘子的器具。借自日語「バール(baaru)」。"}, {"id": 12, "term": "bá-suh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/VQ/5f/203751.mp3", "opts": ["疊蓆、塌塌米", "巴士、公共汽車", "圍裙", "鐵鉗"], "ans": 1, "explain": "巴士、公共汽車。借自日語「バス(basu)」。"}, {"id": 13, "term": "bá-tah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/0j/nj/203761.mp3", "opts": ["奶油", "縫紉機、裁縫車", "漫畫、動畫片、卡通", "瘧疾"], "ans": 0, "explain": "奶油。借自日語「バター(bataa)」。"}, {"id": 14, "term": "bai-óo-lín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/xd/op/203771.mp3", "opts": ["圍裙", "小提琴", "螺絲起子", "安全、放心、沒問題"], "ans": 1, "explain": "小提琴。借自日語「バイオリン(baiorin)」。"}, {"id": 15, "term": "ba̋i-khín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Lc/ea/203781.mp3", "opts": ["黴菌、細菌", "鐵鉗", "尺寸", "章魚"], "ans": 0, "explain": "黴菌、細菌。借自日語「黴菌（ばいきん）(baikin)」。"}, {"id": 16, "term": "bak-kuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/61/BF/203791.mp3", "opts": ["黴菌、細菌", "自行車後面的兩輪拖車、台車、臺車", "公里", "倒車"], "ans": 3, "explain": "倒車。借自日語「バック(bakku)」。"}, {"id": 17, "term": "bàn-bà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/MO/dM/203801.mp3", "opts": ["巧克力", "蕾絲花邊", "保險桿", "巴士、公共汽車"], "ans": 2, "explain": "保險桿。借自日語「バンバー/バンパー(banbaa/banpaa)」。"}, {"id": 18, "term": "bàng-gà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/xQ/rA/203811.mp3", "opts": ["漫畫、動畫片、卡通", "巧克力", "馬拉松", "預備"], "ans": 0, "explain": "漫畫、動畫片、卡通。借自日語「漫画（まんが）(manga)」。"}, {"id": 19, "term": "ba̍t-té-lih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/9n/Lo/203821.mp3", "opts": ["歐吉桑、對不特定年長男性的稱呼", "蓄電池", "倒車", "休息、色情幽會、休憩"], "ans": 1, "explain": "蓄電池。借自日語「バッテリー(batterii)」。"}, {"id": 20, "term": "bat-tah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/SL/mo/203831.mp3", "opts": ["保險套", "球棒", "剪刀", "吉魯巴"], "ans": 1, "explain": "球棒。借自日語「バッター(battaa)」。"}, {"id": 21, "term": "bi-tá-bín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ma/ru/203841.mp3", "opts": ["安全、放心、沒問題", "母親", "甜不辣", "維他命、維生素"], "ans": 3, "explain": "維他命、維生素。借自日語「ビタミン(bitamin)」。"}, {"id": 22, "term": "bì-lù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/uB/Zb/203851.mp3", "opts": ["面霜、克林姆、奶油", "保險套", "啤酒", "網球"], "ans": 2, "explain": "啤酒。借自日語「ビール(biiru)」。"}, {"id": 23, "term": "biat-tooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ke/jN/203861.mp3", "opts": ["爆胎", "綁腿", "彈簧床", "計程車"], "ans": 2, "explain": "彈簧床。借自日語「ベット(betto)」。"}, {"id": 24, "term": "bo̍k-sìn-gù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/8R/xw/203871.mp3", "opts": ["烏龍麵", "拳擊", "啤酒", "蓄電池"], "ans": 1, "explain": "拳擊。借自日語「ボクシング(bokushingu)」。"}, {"id": 25, "term": "bòo-lù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/kZ/X3/203881.mp3", "opts": ["壞球", "包租汽車、高級轎車", "高爾夫球", "郵票"], "ans": 0, "explain": "壞球。借自日語「ボール(booru)」。"}, {"id": 26, "term": "bòo-tòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/re/H9/203891.mp3", "opts": ["保險桿", "賄賂、回扣", "小船", "倒車"], "ans": 2, "explain": "小船。借自日語「ボート(booto)」。"}, {"id": 27, "term": "bu-là-jià", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Tb/QD/203901.mp3", "opts": ["卡拉OK", "胸罩", "做頭髮、造型", "拖鞋"], "ans": 1, "explain": "胸罩。借自日語「ブラジャー(burajaa)」。"}, {"id": 28, "term": "e-pú-lóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/6l/ce/203911.mp3", "opts": ["阿摩尼亞", "螺絲起子", "圍裙", "尺寸"], "ans": 2, "explain": "圍裙。借自日語「エプロン(epuron)」。"}, {"id": 29, "term": "ga-sóo-lín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/TN/NQ/203921.mp3", "opts": ["汽油", "吉他", "煤球", "郵票"], "ans": 0, "explain": "汽油。借自日語「ガソリン(gasorin)」。"}, {"id": 30, "term": "gá-lah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/DB/fS/203931.mp3", "opts": ["焦炭", "鐵鉗", "漫畫、動畫片、卡通", "皮包、文件箱、手提包"], "ans": 0, "explain": "焦炭。借自日語「がら(gara)」。"}, {"id": 31, "term": "gá-suh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/nC/zT/203941.mp3", "opts": ["不鏽鋼", "焦炭", "衣櫥", "瓦斯"], "ans": 3, "explain": "瓦斯。借自日語「ガス(gasu)」。"}, {"id": 32, "term": "gì-tà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/CR/Yv/203951.mp3", "opts": ["冰淇淋", "柏青哥", "吉他", "華爾茲"], "ans": 2, "explain": "吉他。借自日語「ギター(gitaa)」。"}, {"id": 33, "term": "giāng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/M1/NG/203961.mp3", "opts": ["保險桿", "猜拳", "剪刀", "衣櫥"], "ans": 1, "explain": "猜拳。借自日語「じゃん拳（じゃんけん）(janken)」。"}, {"id": 34, "term": "gōo-bōo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/bu/ug/203971.mp3", "opts": ["烏龍麵", "漫畫、動畫片、卡通", "口琴", "牛蒡"], "ans": 3, "explain": "牛蒡。借自日語「牛蒡（ごぼう）(goboo)」。"}, {"id": 35, "term": "goo-lú-huh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/cw/w9/203981.mp3", "opts": ["對不特定年長女性的稱呼、歐巴桑", "高爾夫球", "布魯司", "方向盤"], "ans": 1, "explain": "高爾夫球。借自日語「ゴルフ(gorufu)」。"}, {"id": 36, "term": "ha-móo-ní-khah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/NC/s2/203991.mp3", "opts": ["剪刀", "黑輪", "控固力、混凝土", "口琴"], "ans": 3, "explain": "口琴。借自日語「ハーモニカ(haamonika)」。"}, {"id": 37, "term": "há-muh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ze/ty/204001.mp3", "opts": ["彈珠汽水", "柏青哥", "洋火腿", "螺旋槳"], "ans": 2, "explain": "洋火腿。借自日語「ハム(hamu)」。"}, {"id": 38, "term": "ha̋i-khé-khá-kuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/2z/CD/204011.mp3", "opts": ["香瓜", "目錄", "安全、放心、沒問題", "肺結核"], "ans": 3, "explain": "肺結核。借自日語「肺結核（はいけっかく）(haikekkaku)」。"}, {"id": 39, "term": "hài-ià", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/T1/8a/204021.mp3", "opts": ["巧克力", "包租汽車、高級轎車", "鬧市、沙卡哩巴", "荷爾蒙"], "ans": 1, "explain": "包租汽車、高級轎車。借自日語「ハイヤ(haiya)」。"}, {"id": 40, "term": "hái-kat-lá", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/XI/bg/204031.mp3", "opts": ["離合器、變速器", "幫浦、手動抽水機", "吐司、白麵包", "西裝頭"], "ans": 3, "explain": "西裝頭。借自日語「ハイカラ/ハイーカラ(haikara/haiikara)」。"}, {"id": 41, "term": "ha̋n-tóo-luh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/RJ/iu/204041.mp3", "opts": ["對不特定年長女性的稱呼、歐巴桑", "方向盤", "番茄醬", "離合器、變速器"], "ans": 1, "explain": "方向盤。借自日語「ハンドル(handoru)」。"}, {"id": 42, "term": "ha̋ng-góo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Hk/53/204051.mp3", "opts": ["輪胎", "鐵鉗", "飯盒", "剪刀"], "ans": 2, "explain": "飯盒。借自日語「飯盒（はんごう）(hangoo)」。"}, {"id": 43, "term": "hi-nóo-khih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/WY/aB/204061.mp3", "opts": ["襯衫", "紅蘿蔔", "檜木", "烏龍麵"], "ans": 2, "explain": "檜木。借自日語「檜（ひのき）(hinoki)」。"}, {"id": 44, "term": "hoo-lú-bóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Re/Wt/204071.mp3", "opts": ["控固力、混凝土", "荷爾蒙", "方向盤", "馬殺雞、按摩、色情按摩"], "ans": 1, "explain": "荷爾蒙。借自日語「ホルモン(horumon)」。"}, {"id": 45, "term": "hoo-té-luh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Nk/Pf/204081.mp3", "opts": ["拳擊", "飯店、旅社", "西裝", "剪刀"], "ans": 1, "explain": "飯店、旅社。借自日語「ホテル(hoteru)」。"}, {"id": 46, "term": "hú-looh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ko/Wi/204091.mp3", "opts": ["浴桶、風呂、洗澡", "猜拳", "牛蒡", "安全、放心、沒問題"], "ans": 0, "explain": "浴桶、風呂、洗澡。借自日語「風呂（ふろ）(furo)」。"}, {"id": 47, "term": "iá-mih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/uC/ER/204101.mp3", "opts": ["拔釘子的器具", "黑市", "倒車", "包租汽車、高級轎車"], "ans": 1, "explain": "黑市。借自日語「闇（やみ）(yami)」。"}, {"id": 48, "term": "ia̋n-jín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/KM/j7/204111.mp3", "opts": ["汽油", "黑輪", "引擎", "海帶、昆布"], "ans": 2, "explain": "引擎。借自日語「エンジン(enjin)」。"}, {"id": 49, "term": "iő-káng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/dZ/KH/204121.mp3", "opts": ["西裝", "肺結核", "羊羹", "無袖背心"], "ans": 2, "explain": "羊羹。借自日語「羊羹（ようかん）(yookan)」。"}, {"id": 50, "term": "ió-bih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/my/Nn/204131.mp3", "opts": ["預備", "休息、色情幽會、休憩", "桌球、乒乓球", "引擎"], "ans": 0, "explain": "預備。借自日語「予備（よび）(yobi)」。"}, {"id": 51, "term": "iú-lih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/wW/R8/204141.mp3", "opts": ["吐司、白麵包", "飯店、旅社", "百合花", "霍亂"], "ans": 2, "explain": "百合花。借自日語「百合（ゆり）(yuri)」。"}, {"id": 52, "term": "ji-lú-bah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Lz/cT/204151.mp3", "opts": ["兒童模擬武打戲的、日本古裝武打戲", "付款、算帳、結帳", "小提琴", "吉魯巴"], "ans": 3, "explain": "吉魯巴。借自日語「ジルバ(jiruba)」。"}, {"id": 53, "term": "jiak-kuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/0f/hy/204161.mp3", "opts": ["紅蘿蔔", "拉鍊", "黑輪", "速可達、50cc輕型機車"], "ans": 1, "explain": "拉鍊。借自日語「チャック(chakku)」。"}, {"id": 54, "term": "jiàn-bà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/1B/ig/204171.mp3", "opts": ["潤飾、修飾", "奶油", "夾克", "圍裙"], "ans": 2, "explain": "夾克。借自日語「ジャンパー(janpaa)」。"}, {"id": 55, "term": "jió-toh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/DJ/1Z/204181.mp3", "opts": ["壞球", "大衣", "上等、高級", "黑市"], "ans": 2, "explain": "上等、高級。借自日語「上等（じょうとう）(jootoo)」。"}, {"id": 56, "term": "kha-báng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/8y/Ep/204191.mp3", "opts": ["安全", "吐司、白麵包", "檸檬", "皮包、文件箱、手提包"], "ans": 3, "explain": "皮包、文件箱、手提包。借自日語「鞄（かばん）(kaban)」。"}, {"id": 57, "term": "kha-lá-óo-khe", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/qf/2Y/204201.mp3", "opts": ["胸罩", "大姐", "拔釘子的器具", "卡拉OK"], "ans": 3, "explain": "卡拉OK。借自日語「カラオケ(karaoke)」。"}, {"id": 58, "term": "kha-mé-lah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/cS/Ot/204211.mp3", "opts": ["華爾茲", "照片", "烏龍麵", "照相機、開麥拉"], "ans": 3, "explain": "照相機、開麥拉。借自日語「カメラ(kamera)」。"}, {"id": 59, "term": "kha-tá-lok-guh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Wn/sl/204221.mp3", "opts": ["卡車", "華爾茲", "檸檬", "目錄"], "ans": 3, "explain": "目錄。借自日語「カタログ(katarogu)」。"}, {"id": 60, "term": "kha-tián", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/05/ON/204231.mp3", "opts": ["甜不辣", "阿給、油豆腐", "窗簾", "奶油"], "ans": 2, "explain": "窗簾。借自日語「カーテン(kaaten)」。"}, {"id": 61, "term": "khà-sàng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/bR/M2/204241.mp3", "opts": ["西裝頭", "計程車", "收音機", "母親"], "ans": 3, "explain": "母親。借自日語「母さん（かあさん）(kaasan)」。"}, {"id": 62, "term": "khà-tsiàng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/LZ/IT/204251.mp3", "opts": ["公里", "母親", "維他命、維生素", "瓷磚"], "ans": 1, "explain": "母親。借自日語「母ちゃん（かあちゃん）(kaachan)」。"}, {"id": 63, "term": "kha̋n-jióo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/nu/Pk/204261.mp3", "opts": ["白襯衫", "百分率、百分比", "付款、算帳、結帳", "馬達"], "ans": 2, "explain": "付款、算帳、結帳。借自日語「勘定（かんじょう）(kanjoo)」。"}, {"id": 64, "term": "kha̋ng-páng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/4y/3k/204271.mp3", "opts": ["瘧疾", "看板、招牌", "飯盒", "情緒、奇檬子、心情"], "ans": 1, "explain": "看板、招牌。借自日語「看板（かんばん）(kanban)」。"}, {"id": 65, "term": "khe-tsiap-puh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/0L/Eg/204281.mp3", "opts": ["照片", "荷爾蒙", "番茄醬", "馬達"], "ans": 2, "explain": "番茄醬。借自日語「ケチャップ(kechappu)」。"}, {"id": 66, "term": "khi-móo-tsih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/SC/L7/204291.mp3", "opts": ["香瓜", "速可達、50cc輕型機車", "情緒、奇檬子、心情", "荷爾蒙"], "ans": 2, "explain": "情緒、奇檬子、心情。借自日語「氣持ち（きもち）(kimochi)」。"}, {"id": 67, "term": "khí-looh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/wa/mS/204301.mp3", "opts": ["付款、算帳、結帳", "西裝頭", "公里", "阿斯匹林"], "ans": 2, "explain": "公里。借自日語「キロ(kiro)」。"}, {"id": 68, "term": "khiā-hang", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/5M/R2/204311.mp3", "opts": ["大衣", "杯子", "綁腿", "鋁、輕銀"], "ans": 2, "explain": "綁腿。借自日語「脚絆（きゃはん）(kyahan)」。"}, {"id": 69, "term": "khit-teh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/4i/0A/204321.mp3", "opts": ["尺寸", "郵票", "領帶", "章魚"], "ans": 1, "explain": "郵票。借自日語「切手（きって）(kitte)」。"}, {"id": 70, "term": "khiű-khé", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/h4/uh/204331.mp3", "opts": ["看板、招牌", "公里", "休息、色情幽會、休憩", "布魯司"], "ans": 2, "explain": "休息、色情幽會、休憩。借自日語「休憩（きゅうけい）(kyuukei)」。"}, {"id": 71, "term": "khok-puh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/b0/vx/204341.mp3", "opts": ["杯子", "大衣", "味噌", "爆胎"], "ans": 0, "explain": "杯子。借自日語「コップ(koppu)」。"}, {"id": 72, "term": "khōng-ku-lí", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/cC/iU/204351.mp3", "opts": ["目錄", "控固力、混凝土", "疊蓆、塌塌米", "焦炭"], "ans": 1, "explain": "控固力、混凝土。借自日語「コンクリート(konkuriito)」。"}, {"id": 73, "term": "khòng-buh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/qO/Dy/204361.mp3", "opts": ["控固力、混凝土", "海帶、昆布", "公里", "荷爾蒙"], "ans": 1, "explain": "海帶、昆布。借自日語「昆布（こんぶ）(konbu)」。"}, {"id": 74, "term": "khoo-lé-lah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/IR/4U/204371.mp3", "opts": ["海苔", "高爾夫球", "番茄、西紅柿", "霍亂"], "ans": 3, "explain": "霍亂。借自日語「コレラ(korera)」。"}, {"id": 75, "term": "khoo-mí-sióng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/cS/hS/204381.mp3", "opts": ["汽油", "瘧疾", "吐司、白麵包", "賄賂、回扣"], "ans": 3, "explain": "賄賂、回扣。借自日語「コミッション(komisshon)」。"}, {"id": 76, "term": "khòo-tòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/i4/5n/204391.mp3", "opts": ["阿給、油豆腐", "領帶", "螺旋槳", "大衣"], "ans": 3, "explain": "大衣。借自日語「コート(kooto)」。"}, {"id": 77, "term": "khu-lá-tsih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/7X/UW/204401.mp3", "opts": ["麵包", "離合器、變速器", "計程車", "芥末、山葵醬"], "ans": 1, "explain": "離合器、變速器。借自日語「クラッチ(kuratchi)」。"}, {"id": 78, "term": "khu-lì-mù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/0u/tZ/204411.mp3", "opts": ["名片", "拳擊", "面霜、克林姆、奶油", "彈簧床"], "ans": 2, "explain": "面霜、克林姆、奶油。借自日語「クリーム(kuriimu)」。"}, {"id": 79, "term": "la-jí-ooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/To/sl/204421.mp3", "opts": ["窗簾", "老兄", "烏龍麵", "收音機"], "ans": 3, "explain": "收音機。借自日語「ラジオ(rajio)」。"}, {"id": 80, "term": "la-kiat-tooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/11/Mn/204431.mp3", "opts": ["荷爾蒙", "一種保健藥品", "壞球", "球拍"], "ans": 3, "explain": "球拍。借自日語「ラケット(raketto)」。"}, {"id": 81, "term": "la-mú-neh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/H5/uS/204441.mp3", "opts": ["檸檬", "牛蒡", "無袖背心", "彈珠汽水"], "ans": 3, "explain": "彈珠汽水。借自日語「ラムネ(ramune)」。"}, {"id": 82, "term": "la̋i-jiòo-bù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/WA/S0/204451.mp3", "opts": ["檜木", "照相機、開麥拉", "預備", "安全、放心、沒問題"], "ans": 3, "explain": "安全、放心、沒問題。借自日語「大丈夫（だいじょうぶ）(daijoobu)」。"}, {"id": 83, "term": "la̋i-lìn-gù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/RM/ul/204461.mp3", "opts": ["蕾絲花邊", "番茄、西紅柿", "黃蘿蔔、黃色的醃漬蘿蔔", "無袖背心"], "ans": 3, "explain": "無袖背心。借自日語「ランニング(ranningu)」。"}, {"id": 84, "term": "lài-tah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Y6/4C/gl84.mp3", "opts": ["維他命、維生素", "打火機", "不鏽鋼", "樣本、樣品"], "ans": 1, "explain": "打火機。借自日語「ライター(raitaa)」。"}, {"id": 85, "term": "lê-bóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/V5/sH/204481.mp3", "opts": ["檸檬", "安全", "包租汽車、高級轎車", "幫浦、手動抽水機"], "ans": 0, "explain": "檸檬。借自日語「レモン(remon)」。"}, {"id": 86, "term": "lè-sìr", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ko/8g/204491.mp3", "opts": ["蕾絲花邊", "高爾夫球", "啤酒", "領帶"], "ans": 0, "explain": "蕾絲花邊。借自日語「レース(reesu)」。"}, {"id": 87, "term": "li-á-khah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ds/PW/204501.mp3", "opts": ["招待、引導", "彈珠汽水", "自行車後面的兩輪拖車、台車、臺車", "名片"], "ans": 2, "explain": "自行車後面的兩輪拖車、台車、臺車。借自日語「リヤカー(riyakaa)」。"}, {"id": 88, "term": "lia̋n-táng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/WD/D7/204511.mp3", "opts": ["不鏽鋼", "煤球", "布魯司", "母親"], "ans": 1, "explain": "煤球。借自日語「練炭（れんたん）(rentan)」。"}, {"id": 89, "term": "li̋n-jín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/kx/iQ/204521.mp3", "opts": ["吉他", "紅蘿蔔", "番茄醬", "打火機"], "ans": 1, "explain": "紅蘿蔔。借自日語「人参（にんじん）(ninjin)」。"}, {"id": 90, "term": "lìn-gòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/lM/hm/204531.mp3", "opts": ["蘋果", "板手", "公里", "霍亂"], "ans": 0, "explain": "蘋果。借自日語「林檎（りんご）(ringo)」。"}, {"id": 91, "term": "loo-lài-bà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/9c/PU/204541.mp3", "opts": ["控固力、混凝土", "荷爾蒙", "螺絲起子", "脫衣舞"], "ans": 2, "explain": "螺絲起子。借自日語「ドライバー(doraibaa)」。"}, {"id": 92, "term": "lòo-suh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/TL/0K/204551.mp3", "opts": ["出局", "里脊肉", "鐵鉗", "肺結核"], "ans": 1, "explain": "里脊肉。借自日語「ロース(roosu)」。"}, {"id": 93, "term": "lóo-lí-á", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/9K/wT/204561.mp3", "opts": ["黑市", "卡拉OK", "探戈", "橡膠拖鞋"], "ans": 3, "explain": "橡膠拖鞋。借自日語「草履（ぞうり）(zoori)」。"}, {"id": 94, "term": "ma-lá-lí-á", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Z9/JE/204571.mp3", "opts": ["板手", "阿摩尼亞", "瘧疾", "名片"], "ans": 2, "explain": "瘧疾。借自日語「マラリヤ(mararia)」。"}, {"id": 95, "term": "ma-lá-sóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/C3/0Y/204581.mp3", "opts": ["烏龍麵", "彈簧床", "自行車後面的兩輪拖車、台車、臺車", "馬拉松"], "ans": 3, "explain": "馬拉松。借自日語「マラソン(marason)」。"}, {"id": 96, "term": "ma-sà-tsì", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/vu/L4/204591.mp3", "opts": ["馬殺雞、按摩、色情按摩", "阿斯匹林", "優惠、額外優待", "球棒"], "ans": 0, "explain": "馬殺雞、按摩、色情按摩。借自日語「マッサージ(massaaji)」。"}, {"id": 97, "term": "mài-kù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/27/aZ/204601.mp3", "opts": ["麥克風", "啤酒", "衣櫥", "維他命、維生素"], "ans": 0, "explain": "麥克風。借自日語「マイク(maiku)」。"}, {"id": 98, "term": "me-lí-á", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ex/45/204611.mp3", "opts": ["三夾板", "汽油", "洋娃娃、人偶", "壽司"], "ans": 0, "explain": "三夾板。借自日語「ベニヤ(beniya)」。"}, {"id": 99, "term": "me-lóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/qc/5Q/204621.mp3", "opts": ["倒車", "吉他", "輪胎", "香瓜"], "ans": 3, "explain": "香瓜。借自日語「メロン(meron)」。"}, {"id": 100, "term": "mè-sì", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/1r/rm/204631.mp3", "opts": ["名片", "洋火腿", "計程車", "彈簧床"], "ans": 0, "explain": "名片。借自日語「名刺（めいし）(meishi)」。"}, {"id": 101, "term": "mi-sín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/dr/01/204641.mp3", "opts": ["縫紉機、裁縫車", "幫浦、手動抽水機", "飯店、旅社", "猜拳"], "ans": 0, "explain": "縫紉機、裁縫車。借自日語「ミシン(mishin)」。"}, {"id": 102, "term": "mí-sooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/FB/52/204651.mp3", "opts": ["味噌", "腦筋不正常", "巴士、公共汽車", "吐司、白麵包"], "ans": 0, "explain": "味噌。借自日語「味噌（みそ）(miso)」。"}, {"id": 103, "term": "mòo-tà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/NL/pq/204661.mp3", "opts": ["馬達", "西裝", "紅蘿蔔", "浴桶、風呂、洗澡"], "ans": 0, "explain": "馬達。借自日語「モーター(mootaa)」。"}, {"id": 104, "term": "na̋i-lóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Qj/h9/204671.mp3", "opts": ["華爾茲", "耐龍、尼龍", "蓄電池", "收音機"], "ans": 1, "explain": "耐龍、尼龍。借自日語「ナイロン(nairon)」。"}, {"id": 105, "term": "ne-kut-tái", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/HR/EQ/204681.mp3", "opts": ["拖鞋", "探戈", "領帶", "離合器、變速器"], "ans": 2, "explain": "領帶。借自日語「ネクタイ(nekutai)」。"}, {"id": 106, "term": "nè-tsiàng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/rN/CC/204691.mp3", "opts": ["大姐", "瘧疾", "女中、飯店或旅館的女服務員", "賄賂、回扣"], "ans": 2, "explain": "女中、飯店或旅館的女服務員。借自日語「姉ちゃん（ねえちゃん）(neechan)」。"}, {"id": 107, "term": "nőo-sín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Nt/Sp/204701.mp3", "opts": ["檸檬", "腦筋不正常", "味噌", "番茄、西紅柿"], "ans": 1, "explain": "腦筋不正常。借自日語「腦震盪（のうしんとう）(noosintoo)」。"}, {"id": 108, "term": "nóo-lih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/b8/1b/204711.mp3", "opts": ["海苔", "西裝頭", "煤球", "倒車"], "ans": 0, "explain": "海苔。借自日語「海苔（のり）(nori)」。"}, {"id": 109, "term": "oo-bá-sáng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/hI/Jn/204721.mp3", "opts": ["吉他", "兒童模擬武打戲的、日本古裝武打戲", "對不特定年長女性的稱呼、歐巴桑", "維他命、維生素"], "ans": 2, "explain": "對不特定年長女性的稱呼、歐巴桑。借自日語「おばさん(obasan)」。"}, {"id": 110, "term": "oo-jí-sáng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/jR/dv/204731.mp3", "opts": ["焦炭", "衣櫥", "歐吉桑、對不特定年長男性的稱呼", "速可達、50cc輕型機車"], "ans": 2, "explain": "歐吉桑、對不特定年長男性的稱呼。借自日語「小父さん（おじさん）(ojisan)」。"}, {"id": 111, "term": "oo-lián", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/IL/vn/204741.mp3", "opts": ["黑輪", "飯店、旅社", "縫紉機、裁縫車", "焦炭"], "ans": 0, "explain": "黑輪。借自日語「お田（おでん）(oden)」。"}, {"id": 112, "term": "oo-lín-gióo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/xH/FF/204751.mp3", "opts": ["彈珠汽水", "洋娃娃、人偶", "螺旋槳", "大衣"], "ans": 1, "explain": "洋娃娃、人偶。借自日語「お人形（おにんぎょう）(oningyoo)」。"}, {"id": 113, "term": "oo-nè-sàng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/qY/Hx/204761.mp3", "opts": ["大姐", "吐司、白麵包", "郵票", "照片"], "ans": 0, "explain": "大姐。借自日語「お姉さん（おねえさん）(oneesan)」。"}, {"id": 114, "term": "oo-tóo-bái", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/KZ/SG/204771.mp3", "opts": ["摩托車、機車", "鐵鉗", "脫衣舞", "櫻花"], "ans": 0, "explain": "摩托車、機車。借自日語「オートバイ(ootobai)」。"}, {"id": 115, "term": "òo-bà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/MI/qq/204781.mp3", "opts": ["皮包、文件箱、手提包", "長大衣、長外套", "小提琴", "奶油"], "ans": 1, "explain": "長大衣、長外套。借自日語「オーバーコート/オーバー(oobaakooto/oobaa)」。"}, {"id": 116, "term": "pha-tsìn-kòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/v1/zA/204791.mp3", "opts": ["高爾夫球", "柏青哥", "秋刀魚", "奶油"], "ans": 1, "explain": "柏青哥。借自日語「パチンコ(pachinko)」。"}, {"id": 117, "term": "pha̋-siàn-tòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/BW/vp/204801.mp3", "opts": ["維他命、維生素", "自行車後面的兩輪拖車、台車、臺車", "剪刀", "百分率、百分比"], "ans": 3, "explain": "百分率、百分比。借自日語「パーセント(paasento)」。"}, {"id": 118, "term": "pháng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/OY/1s/204811.mp3", "opts": ["麵包", "照片", "打招呼、問候", "壞球"], "ans": 0, "explain": "麵包。借自日語「パン(pan)」。"}, {"id": 119, "term": "phàng-kù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/gn/9N/204821.mp3", "opts": ["幫浦、手動抽水機", "拔釘子的器具", "球拍", "爆胎"], "ans": 3, "explain": "爆胎。借自日語「パンク(panku)」。"}, {"id": 120, "term": "phi-á-nooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Cu/XX/204831.mp3", "opts": ["包租汽車、高級轎車", "鋼琴", "付款、算帳、結帳", "杯子"], "ans": 1, "explain": "鋼琴。借自日語「ピアノ(piano)」。"}, {"id": 121, "term": "phiàn-tsih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/PS/wI/204841.mp3", "opts": ["鐵鉗", "目錄", "馬殺雞、按摩、色情按摩", "名片"], "ans": 0, "explain": "鐵鉗。借自日語「ペンチ(penchi)」。"}, {"id": 122, "term": "phi̋n-phóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/zp/SA/204851.mp3", "opts": ["保險桿", "自行車後面的兩輪拖車、台車、臺車", "賄賂、回扣", "桌球、乒乓球"], "ans": 3, "explain": "桌球、乒乓球。借自日語「ピンポン(pinpon)」。"}, {"id": 123, "term": "phòng-phù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/UA/on/204861.mp3", "opts": ["壽司", "照相機、開麥拉", "出局", "幫浦、手動抽水機"], "ans": 3, "explain": "幫浦、手動抽水機。借自日語「ポンプ(ponpu)」。"}, {"id": 124, "term": "phu-lóo-phé-lá", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/xC/6x/204871.mp3", "opts": ["肺結核", "煤球", "飯店、旅社", "螺旋槳"], "ans": 3, "explain": "螺旋槳。借自日語「プロペラ(puropera)」。"}, {"id": 125, "term": "pu-lù-sù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/vu/d9/204881.mp3", "opts": ["布魯司", "剪刀", "百合花", "柏青哥"], "ans": 0, "explain": "布魯司。借自日語「ブルース(buruusu)」。"}, {"id": 126, "term": "sa-khá-lí-bah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/mB/3c/204891.mp3", "opts": ["球棒", "看板、招牌", "衣櫥", "鬧市、沙卡哩巴"], "ans": 3, "explain": "鬧市、沙卡哩巴。借自日語「盛リ場（さかりば）(sakariba)」。"}, {"id": 127, "term": "sa-khú-lah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/g5/yW/204901.mp3", "opts": ["螺旋槳", "馬拉松", "巧克力", "櫻花"], "ans": 3, "explain": "櫻花。借自日語「櫻（さくら）(sakura)」。"}, {"id": 128, "term": "sa-sí-mih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/uk/j0/204911.mp3", "opts": ["疊蓆、塌塌米", "摩托車、機車", "優惠、額外優待", "生魚片"], "ans": 3, "explain": "生魚片。借自日語「刺身（さしみ）(sashimi)」。"}, {"id": 129, "term": "sa̋-bì-sù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/ny/Hr/204921.mp3", "opts": ["牛蒡", "歐吉桑、對不特定年長男性的稱呼", "鬧市、沙卡哩巴", "優惠、額外優待"], "ans": 3, "explain": "優惠、額外優待。借自日語「サービス(saabisu)」。"}, {"id": 130, "term": "sài-sù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/tn/Ug/204931.mp3", "opts": ["櫻花", "看板、招牌", "尺寸", "猜拳"], "ans": 2, "explain": "尺寸。借自日語「サイズ(saizu)」。"}, {"id": 131, "term": "sak-khuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/3T/Ct/204941.mp3", "opts": ["保險套", "烏醋、醬料", "章魚", "預備"], "ans": 0, "explain": "保險套。借自日語「サック(sakku)」。"}, {"id": 132, "term": "sa̋m-phú-luh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/G1/Th/204951.mp3", "opts": ["樣本、樣品", "縫紉機、裁縫車", "冰淇淋", "疊蓆、塌塌米"], "ans": 0, "explain": "樣本、樣品。借自日語「サンプル(sanpuru)」。"}, {"id": 133, "term": "sàn-bah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/wU/cz/204961.mp3", "opts": ["溜滑梯", "司機、運將", "浴桶、風呂、洗澡", "秋刀魚"], "ans": 3, "explain": "秋刀魚。借自日語「秋刀魚（さんま）(sanma)」。"}, {"id": 134, "term": "se-bí-looh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/xc/Dz/204971.mp3", "opts": ["西裝", "球棒", "卡拉OK", "華爾茲"], "ans": 0, "explain": "西裝。借自日語「背広（せびろ）(sebiro)」。"}, {"id": 135, "term": "sè-hù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/87/xk/204981.mp3", "opts": ["方向盤", "白襯衫", "安全", "夾克"], "ans": 2, "explain": "安全。借自日語「セーフ(seehu)」。"}, {"id": 136, "term": "si-á-geh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/EJ/fy/204991.mp3", "opts": ["鬧市、沙卡哩巴", "上等、高級", "檸檬", "潤飾、修飾"], "ans": 3, "explain": "潤飾、修飾。借自日語「仕上げ（しあげ）(shiage)」。"}, {"id": 137, "term": "sia-sín", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/l7/CQ/205001.mp3", "opts": ["一種工作鞋", "照片", "賄賂、回扣", "百合花"], "ans": 1, "explain": "照片。借自日語「寫真（しゃしん）(shashin)」。"}, {"id": 138, "term": "siat-tooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/KC/nH/205011.mp3", "opts": ["做頭髮、造型", "無袖背心", "自行車後面的兩輪拖車、台車、臺車", "麵包"], "ans": 0, "explain": "做頭髮、造型。借自日語「セット(setto)」。"}, {"id": 139, "term": "siat-tsuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/x9/6I/205021.mp3", "opts": ["照相機、開麥拉", "壽司", "襯衫", "看板、招牌"], "ans": 2, "explain": "襯衫。借自日語「シャツ(shatsu)」。"}, {"id": 140, "term": "sio̍k-pháng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/2v/I5/205031.mp3", "opts": ["芥末、山葵醬", "窗簾", "吐司、白麵包", "瓦斯"], "ans": 2, "explain": "吐司、白麵包。借自日語「食パン（しょくパン）(shokupan)」。"}, {"id": 141, "term": "si̍p-pán-ná", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/E3/qu/205041.mp3", "opts": ["面霜、克林姆、奶油", "板手", "拳擊", "腦筋不正常"], "ans": 1, "explain": "板手。借自日語「スパナ(supana)」。"}, {"id": 142, "term": "sir-bé-lí-lái", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/jH/tQ/205051.mp3", "opts": ["領帶", "溜滑梯", "引擎", "洋娃娃、人偶"], "ans": 1, "explain": "溜滑梯。借自日語「滑り台（すベりだい）(suberidai)」。"}, {"id": 143, "term": "sir-tián-lè-sù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/jE/nr/205061.mp3", "opts": ["不鏽鋼", "打招呼、問候", "保險套", "白襯衫"], "ans": 0, "explain": "不鏽鋼。借自日語「ステンレス(sutenresu)」。"}, {"id": 144, "term": "sòo-sù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/C3/ez/205071.mp3", "opts": ["黑輪", "拖鞋", "保險套", "烏醋、醬料"], "ans": 3, "explain": "烏醋、醬料。借自日語「ソース(soosu)」。"}, {"id": 145, "term": "su-khù-tà", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Dv/14/205081.mp3", "opts": ["圍裙", "蘋果", "速可達、50cc輕型機車", "老兄"], "ans": 2, "explain": "速可達、50cc輕型機車。借自日語「スクーター(sukuutaa)」。"}, {"id": 146, "term": "su-lit-pah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/gp/UX/205091.mp3", "opts": ["拖鞋", "蕾絲花邊", "紅蘿蔔", "母親"], "ans": 0, "explain": "拖鞋。借自日語「スリッパ(surippa)」。"}, {"id": 147, "term": "su-tó-lip-puh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Wl/vl/205101.mp3", "opts": ["檸檬", "蘋果", "付款、算帳、結帳", "脫衣舞"], "ans": 3, "explain": "脫衣舞。借自日語「ストリップ(sutorippu)」。"}, {"id": 148, "term": "sú-sih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/yh/dQ/205111.mp3", "opts": ["壞球", "螺絲起子", "圍裙", "壽司"], "ans": 3, "explain": "壽司。借自日語「寿司（すし）(sushi)」。"}, {"id": 149, "term": "tha-khú-áng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/P3/JS/205121.mp3", "opts": ["橡膠拖鞋", "黃蘿蔔、黃色的醃漬蘿蔔", "計程車", "味噌"], "ans": 1, "explain": "黃蘿蔔、黃色的醃漬蘿蔔。借自日語「沢庵（たくあん）(takuan)」。"}, {"id": 150, "term": "tha-khú-sih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/6c/ze/205131.mp3", "opts": ["里脊肉", "計程車", "番茄、西紅柿", "奶油"], "ans": 1, "explain": "計程車。借自日語「タクシー(takushii)」。"}, {"id": 151, "term": "tha-thá-mih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/xw/eC/205141.mp3", "opts": ["蓄電池", "番茄、西紅柿", "疊蓆、塌塌米", "襯衫"], "ans": 2, "explain": "疊蓆、塌塌米。借自日語「疊（たたみ）(tatami)」。"}, {"id": 152, "term": "thài-ià", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/HV/1h/205151.mp3", "opts": ["母親", "柏青哥", "方向盤", "輪胎"], "ans": 3, "explain": "輪胎。借自日語「タイヤ(taiya)」。"}, {"id": 153, "term": "thài-lù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/l2/yt/205161.mp3", "opts": ["瓷磚", "烏醋、醬料", "爆胎", "拳擊"], "ans": 0, "explain": "瓷磚。借自日語「タイル(tairu)」。"}, {"id": 154, "term": "thak-khooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/yr/Wh/205171.mp3", "opts": ["番茄、西紅柿", "安全、放心、沒問題", "章魚", "郵票"], "ans": 2, "explain": "章魚。借自日語「蛸、章魚（たこ）(tako)」。"}, {"id": 155, "term": "thàn-gòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/J1/L7/205181.mp3", "opts": ["壞球", "黴菌、細菌", "探戈", "海苔"], "ans": 2, "explain": "探戈。借自日語「タンゴ(tango)」。"}, {"id": 156, "term": "thàng-sù", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Ku/10/205191.mp3", "opts": ["蓄電池", "爆胎", "衣櫥", "探戈"], "ans": 2, "explain": "衣櫥。借自日語「簞笥（たんす）(tansu)」。"}, {"id": 157, "term": "that-bí", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/jk/KW/205201.mp3", "opts": ["一種工作鞋", "阿摩尼亞", "疊蓆、塌塌米", "多桑、父親"], "ans": 0, "explain": "一種工作鞋。借自日語「足袋（たび）(tabi)」。"}, {"id": 158, "term": "the-ní-suh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/MX/lh/205211.mp3", "opts": ["高爾夫球", "上等、高級", "圍裙", "網球"], "ans": 3, "explain": "網球。借自日語「テニス(tenisu)」。"}, {"id": 159, "term": "thia̋n-pú-lah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/CG/wC/205221.mp3", "opts": ["甜不辣", "飯盒", "優惠、額外優待", "小船"], "ans": 0, "explain": "甜不辣。借自日語「天麩羅（テンプラ）(tenpura)」。"}, {"id": 160, "term": "thoo-lá-khuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/SA/dg/205231.mp3", "opts": ["阿斯匹林", "洋火腿", "卡車", "啤酒"], "ans": 2, "explain": "卡車。借自日語「トラック(torakku)」。"}, {"id": 161, "term": "thoo-má-tooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/YK/Bk/205241.mp3", "opts": ["秋刀魚", "照相機、開麥拉", "番茄、西紅柿", "乾脆、阿莎力"], "ans": 2, "explain": "番茄、西紅柿。借自日語「トマト(tomato)」。"}, {"id": 162, "term": "tòo-sàng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Zt/MP/205251.mp3", "opts": ["麥克風", "乾脆、阿莎力", "無袖背心", "多桑、父親"], "ans": 3, "explain": "多桑、父親。借自日語「父さん（とうさん）(toosan)」。"}, {"id": 163, "term": "tshia̋n-pá-lah", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/wI/Nj/205261.mp3", "opts": ["目錄", "紅蘿蔔", "卡拉OK", "兒童模擬武打戲的、日本古裝武打戲"], "ans": 3, "explain": "兒童模擬武打戲的、日本古裝武打戲。借自日語「ちゃんばら(chanbara)」。"}, {"id": 164, "term": "tsiok-kih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/hw/g9/205271.mp3", "opts": ["小費", "球棒", "乾脆、阿莎力", "剪刀"], "ans": 3, "explain": "剪刀。借自日語「チョッキ(chokki)」。"}, {"id": 165, "term": "tsioo-kóo-lè-tòo", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Pv/zQ/205281.mp3", "opts": ["巧克力", "探戈", "疊蓆、塌塌米", "里脊肉"], "ans": 0, "explain": "巧克力。借自日語「チョコレート(chokoreeto)」。"}, {"id": 166, "term": "tsit-puh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/HB/FC/205291.mp3", "opts": ["小費", "烏龍麵", "螺絲起子", "啤酒"], "ans": 0, "explain": "小費。借自日語「チップ(chippu)」。"}, {"id": 167, "term": "u-lóng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/hY/Yl/205301.mp3", "opts": ["番茄、西紅柿", "潤飾、修飾", "安全、放心、沒問題", "烏龍麵"], "ans": 3, "explain": "烏龍麵。借自日語「饂飩（うどん）(udon)」。"}, {"id": 168, "term": "ua-khá-móo-tooh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/kX/tQ/205311.mp3", "opts": ["一種保健藥品", "馬達", "飯店、旅社", "探戈"], "ans": 0, "explain": "一種保健藥品。借自日語「わかもと(wakamoto)」。"}, {"id": 169, "term": "ua-lù-tsuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Np/i9/205321.mp3", "opts": ["拉鍊", "華爾茲", "杯子", "球拍"], "ans": 1, "explain": "華爾茲。借自日語「ワルツ(warutsu)」。"}, {"id": 170, "term": "ua-sá-bih", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/Wr/7m/205331.mp3", "opts": ["脫衣舞", "方向盤", "打火機", "芥末、山葵醬"], "ans": 3, "explain": "芥末、山葵醬。借自日語「山葵（わさび）(wasabi)」。"}, {"id": 171, "term": "ua̋i-siat-tsuh", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/1z/gL/205341.mp3", "opts": ["摩托車、機車", "巧克力", "白襯衫", "控固力、混凝土"], "ans": 2, "explain": "白襯衫。借自日語「ワイシャツ(waishatsu)」。"}, {"id": 172, "term": "ùn-tsiàng", "audio": "https://sutian.moe.edu.tw/media/senn/mp3/imtong/oo/mh/205351.mp3", "opts": ["秋刀魚", "安全、放心、沒問題", "司機、運將", "吐司、白麵包"], "ans": 2, "explain": "司機、運將。借自日語「運ちゃん（うんちゃん）(unchan)」。"}];
+const COUNT_OPTIONS = [
+  { n: 5, label: "5 題" },
+  { n: 7, label: "7 題" },
+  { n: 9, label: "9 題" },
+  { n: 11, label: "11 題" },
+  { n: 13, label: "13 題" },
+  { n: QUESTIONS.length, label: "全部" },
+];
+const LETTERS = ["A", "B", "C", "D"];
+
+let selectedCount = null;
+let bag = [];
+let session = null; // indices, pos, correctCount, records
+
+function buildCountGrid() {
+  const grid = document.getElementById("count-grid");
+  grid.innerHTML = "";
+  COUNT_OPTIONS.forEach(opt => {
+    const btn = document.createElement("div");
+    btn.className = "count-btn";
+    btn.innerHTML = opt.label + (opt.sub ? '<span class="count-sub">' + opt.sub + '</span>' : "");
+    btn.onclick = () => selectCount(opt.n, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function selectCount(n, btnEl) {
+  selectedCount = n;
+  document.querySelectorAll(".count-btn").forEach(b => b.classList.remove("selected"));
+  btnEl.classList.add("selected");
+  document.getElementById("start-btn").disabled = false;
+}
+
+// --- 不重複抽題袋：抽完所有題號才會重新洗牌 ---
+function shuffledIndices() {
+  const arr = QUESTIONS.map((_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function drawQuestions(n) {
+  const result = [];
+  while (result.length < n) {
+    if (bag.length === 0) bag = shuffledIndices();
+    result.push(bag.pop());
+  }
+  return result;
+}
+
+function startChallenge() {
+  if (!selectedCount) return;
+  const indices = drawQuestions(selectedCount);
+  const records = indices.map(() => ({ solved: false, wrongSet: new Set() }));
+  session = { indices, pos: 0, correctCount: 0, records };
+  document.getElementById("screen-entry").classList.add("hidden");
+  document.getElementById("screen-game").classList.remove("hidden");
+  document.getElementById("hero-banner").classList.add("hidden");
+  enterQuestion();
+}
+
+// 進入一題新題目時呼叫：畫面重繪 + 自動播放該詞讀音
+function enterQuestion() {
+  renderQuestion();
+  playCurrentAudio();
+}
+
+function currentQuestion() {
+  return QUESTIONS[session.indices[session.pos]];
+}
+
+function renderQuestion() {
+  const q = currentQuestion();
+  const record = session.records[session.pos];
+  const total = session.indices.length;
+  document.getElementById("progress-text").textContent = "第 " + (session.pos + 1) + " / " + total + " 題";
+  document.getElementById("score-text").textContent = "答對 " + session.correctCount + " 題";
+  document.getElementById("progress-fill").style.width = Math.round(((session.pos + 1) / total) * 100) + "%";
+  document.getElementById("tailo-text").textContent = q.term;
+
+  const optList = document.getElementById("opt-list");
+  optList.innerHTML = "";
+  q.opts.forEach((optText, i) => {
+    const btn = document.createElement("button");
+    btn.className = "opt-btn";
+    btn.id = "opt-" + i;
+    btn.innerHTML = '<span class="opt-letter">' + LETTERS[i] + '</span><span>' + optText.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>';
+    btn.onclick = () => selectAnswer(i);
+    if (record.wrongSet.has(i)) {
+      btn.classList.add("wrong");
+      btn.disabled = true;
+    }
+    if (record.solved && i === q.ans) {
+      btn.classList.add("correct");
+    }
+    if (record.solved) {
+      btn.disabled = true;
+    }
+    optList.appendChild(btn);
+  });
+
+  const feedback = document.getElementById("feedback-banner");
+  const explainBox = document.getElementById("explain-box");
+  if (record.solved) {
+    feedback.textContent = "✅ 答對矣！";
+    feedback.style.color = "var(--correct)";
+    document.getElementById("explain-text").textContent = q.explain;
+    explainBox.classList.add("show");
+  } else if (record.wrongSet.size > 0) {
+    feedback.textContent = "❌ 這毋著，繼續試看覓！";
+    feedback.style.color = "var(--wrong)";
+    explainBox.classList.remove("show");
+  } else {
+    feedback.textContent = "";
+    explainBox.classList.remove("show");
+  }
+
+  document.getElementById("prev-btn").disabled = session.pos === 0;
+  document.getElementById("next-btn").textContent = (session.pos === total - 1) ? "完成挑戰 🏁" : "下一題 ➡️";
+}
+
+function playCurrentAudio() {
+  const q = currentQuestion();
+  const audio = new Audio(q.audio);
+  audio.play().catch(() => {});
+}
+
+function selectAnswer(i) {
+  const q = currentQuestion();
+  const record = session.records[session.pos];
+  if (record.solved || record.wrongSet.has(i)) return;
+
+  const isCorrect = i === q.ans;
+  const sfx = document.getElementById(isCorrect ? "sfx-correct" : "sfx-wrong");
+  sfx.currentTime = 0;
+  sfx.play().catch(() => {});
+
+  if (isCorrect) {
+    record.solved = true;
+    session.correctCount++;
+  } else {
+    record.wrongSet.add(i);
+  }
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (session.pos === 0) return;
+  session.pos--;
+  enterQuestion();
+}
+
+function nextQuestion() {
+  const total = session.indices.length;
+  if (session.pos === total - 1) {
+    finishChallenge();
+    return;
+  }
+  session.pos++;
+  enterQuestion();
+}
+
+function finishChallenge() {
+  const total = session.indices.length;
+  const correct = session.correctCount;
+  const lastScore = document.getElementById("last-score");
+  lastScore.textContent = "🏆 上一輪挑戰：" + correct + " / " + total + " 題正確";
+  lastScore.classList.add("show");
+  session = null;
+  document.getElementById("screen-game").classList.add("hidden");
+  document.getElementById("screen-entry").classList.remove("hidden");
+  document.getElementById("hero-banner").classList.remove("hidden");
+}
+
+buildCountGrid();
+</script>
+</body>
+</html>
